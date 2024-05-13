@@ -1,0 +1,15 @@
+[
+  {
+    "name": "Router r1",
+    "ip": "172.16.8.2",
+    "port": 161,
+    "credential_profile": {
+      "name": "Router r1",
+      "protocol": "snmp",
+      "version": "v2c",
+      "community": 3
+    },
+    "retry_count": 5,
+    "plugin_type": "Discover"
+  }
+]
