@@ -1,4 +1,4 @@
-package NMS_Lite
+package main
 
 import (
 	"NMS-Lite/snmp"
@@ -17,7 +17,7 @@ const (
 	Collect    = "Collect"
 )
 
-func Bootstrap() {
+func main() {
 
 	wg := new(sync.WaitGroup)
 
@@ -65,17 +65,28 @@ func Bootstrap() {
 			}(context, contexts)
 
 			if pluginName, ok := context[PluginName].(string); ok {
+				var result map[string]interface{}
 				switch pluginName {
 
 				case Discover:
-					snmp.Discover(context, &errors)
+					result = snmp.Discover(context, &errors)
 
 				case Collect:
-					snmp.Collect(context, &errors)
+					result = snmp.Collect(context, &errors)
 
 				default:
 					fmt.Println("Unsupported plugin type!")
 				}
+				if result != nil {
+					context["result"] = result
+				}
+
+				jsonResult, err := json.Marshal(result)
+				if err != nil {
+					Logger.Error(fmt.Sprintf("Error marshaling collection result: %s", err.Error()))
+				}
+				DataLogger := utils.NewLogger("data", "BootstrapResult")
+				DataLogger.Info(string(jsonResult))
 			}
 		}(context)
 
