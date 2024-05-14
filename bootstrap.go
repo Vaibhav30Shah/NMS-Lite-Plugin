@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"sync"
 )
 
@@ -23,12 +24,6 @@ func Bootstrap() {
 	Logger := utils.NewLogger("bootstrap", "Bootstrap")
 
 	Logger.Info("Starting Plugin Engine")
-
-	/*
-		{
-
-		}
-	*/
 
 	decodedContext, err := base64.StdEncoding.DecodeString(os.Args[1])
 
@@ -63,7 +58,7 @@ func Bootstrap() {
 
 				if r := recover(); r != nil {
 
-					Logger.Error("Panic occurred!")
+					Logger.Error(fmt.Sprintf("Panic occurred: %v\n%s", r, debug.Stack()))
 
 					return
 				}
@@ -73,10 +68,10 @@ func Bootstrap() {
 				switch pluginName {
 
 				case Discover:
-					snmp.Discover(context, errors)
+					snmp.Discover(context, &errors)
 
 				case Collect:
-					snmp.Collect(context, errors)
+					snmp.Collect(context, &errors)
 
 				default:
 					fmt.Println("Unsupported plugin type!")

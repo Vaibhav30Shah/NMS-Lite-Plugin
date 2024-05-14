@@ -1,15 +1,29 @@
 [
   {
-    "name": "Router r1",
+    "name": "Switch s1",
     "ip": "172.16.8.2",
     "port": 161,
     "credential_profile": {
       "name": "Router r1",
       "protocol": "snmp",
-      "version": "v2c",
-      "community": 3
+      "version": "2c",
+      "community": "public"
     },
     "retry_count": 5,
     "plugin_type": "Discover"
+  },
+
+  {
+    "name": "Switch s2",
+    "ip": "172.16.10.43",
+    "port": 161,
+    "credential_profile": {
+      "name": "Switch s1",
+      "protocol": "snmp",
+      "version": "2c",
+      "community": "public"
+    },
+    "retry_count": 5,
+    "plugin_type": "Collect"
   }
 ]
