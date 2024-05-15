@@ -9,71 +9,8 @@ import (
 	"strings"
 )
 
-//func Discover(context map[string]interface{}, errors *[]map[string]interface{}) {
-//	Logger := utils.NewLogger("snmp", "Discover")
-//
-//	ip, port, community, timeOut, version := utils.ValidateContext(context)
-//
-//	client, err := snmpclient.Init(ip, community, uint16(port), version, int(timeOut))
-//
-//	if err != nil {
-//		Logger.Error(fmt.Sprintf("Error initializing SNMP client: %s", err.Error()))
-//
-//		return
-//	}
-//
-//	defer client.Close()
-//
-//	result, err := client.Get([]string{consts.ScalerOids["system.name"]})
-//
-//	if err != nil {
-//		Logger.Error(fmt.Sprintf("Error fetching system name: %s", err.Error()))
-//
-//		return
-//	}
-//
-//	if len(result) == 0 {
-//		Logger.Error("No response received from SNMP device")
-//
-//		return
-//	}
-//
-//	var systemName string
-//
-//	switch value := result[0].Value.(type) {
-//
-//	case string:
-//		systemName = strings.TrimPrefix(strings.TrimSuffix(value, `"`), `"`)
-//
-//	case []byte:
-//		systemName = string(value)
-//
-//	default:
-//		Logger.Error("Unsupported value type for system name")
-//
-//		return
-//	}
-//
-//	discoveryResult := map[string]interface{}{
-//		"system_name": systemName,
-//	}
-//
-//	jsonResult, err := json.Marshal(discoveryResult)
-//
-//	if err != nil {
-//		Logger.Error(fmt.Sprintf("Error marshaling discovery result: %s", err.Error()))
-//
-//		return
-//	}
-//
-//	fmt.Println(string(jsonResult))
-//
-//	Logger2 := utils.NewLogger("snmp", "ResultData")
-//
-//	Logger2.Info(string(jsonResult))
-//}
+func Discover(context map[string]interface{}, errors *[]map[string]interface{}) (map[string]interface{}, *[]map[string]interface{}) {
 
-func Discover(context map[string]interface{}, errors *[]map[string]interface{}) map[string]interface{} {
 	Logger := utils.NewLogger("snmp", "Discover")
 
 	ip, port, community, timeOut, version := utils.ValidateContext(context)
@@ -81,22 +18,49 @@ func Discover(context map[string]interface{}, errors *[]map[string]interface{}) 
 	client, err := snmpclient.Init(ip, community, uint16(port), version, int(timeOut))
 
 	if err != nil {
+
+		*errors = append(*errors, map[string]interface{}{
+
+			consts.ErrorName: "Error Initializing snmp client",
+
+			consts.ErrorMessage: err.Error(),
+		})
+
 		Logger.Error(fmt.Sprintf("Error initializing SNMP client: %s", err.Error()))
-		return nil
+
+		return nil, errors
 	}
 
 	defer client.Close()
 
-	result, err := client.Get([]string{consts.ScalerOids["system.name"]})
+	result, err := client.Get([]string{consts.ScalerOids[consts.SystemName]})
 
 	if err != nil {
+
+		*errors = append(*errors, map[string]interface{}{
+
+			consts.ErrorName: "Error fetching system name",
+
+			consts.ErrorMessage: err.Error(),
+		})
+
 		Logger.Error(fmt.Sprintf("Error fetching system name: %s", err.Error()))
-		return nil
+
+		return nil, errors
 	}
 
 	if len(result) == 0 {
+
+		*errors = append(*errors, map[string]interface{}{
+
+			consts.ErrorName: "No response received from SNMP device",
+
+			consts.ErrorMessage: err.Error(),
+		})
+
 		Logger.Error("No response received from SNMP device")
-		return nil
+
+		return nil, errors
 	}
 
 	var systemName string
@@ -111,17 +75,20 @@ func Discover(context map[string]interface{}, errors *[]map[string]interface{}) 
 
 	default:
 		Logger.Error("Unsupported value type for system name")
-		return nil
+
+		return nil, nil
 	}
 
 	discoveryResult := map[string]interface{}{
+
 		"system_name": systemName,
 	}
 
 	jsonResult, err := json.Marshal(discoveryResult)
 
 	Logger2 := utils.NewLogger("snmp", "ResultData")
+
 	Logger2.Info(string(jsonResult))
 
-	return discoveryResult
+	return discoveryResult, nil
 }

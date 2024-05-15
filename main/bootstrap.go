@@ -1,6 +1,7 @@
 package main
 
 import (
+	"NMS-Lite/consts"
 	"NMS-Lite/snmp"
 	"NMS-Lite/utils"
 	"encoding/base64"
@@ -9,12 +10,6 @@ import (
 	"os"
 	"runtime/debug"
 	"sync"
-)
-
-const (
-	Discover   = "Discover"
-	PluginName = "plugin_type"
-	Collect    = "Collect"
 )
 
 func main() {
@@ -28,6 +23,7 @@ func main() {
 	decodedContext, err := base64.StdEncoding.DecodeString(os.Args[1])
 
 	if err != nil {
+
 		Logger.Error(fmt.Sprintf("Error in decoding context %s", err.Error()))
 
 		return
@@ -36,10 +32,13 @@ func main() {
 	contexts := make([]map[string]interface{}, 0)
 
 	if err = json.Unmarshal(decodedContext, &contexts); err != nil {
+
 		Logger.Error(fmt.Sprintf("Conversion of json to map failed: %s", err.Error()))
 
 		return
 	}
+
+	//fmt.Println(contexts)
 
 	//fmt.Println(string(decodedContext))
 
@@ -64,28 +63,52 @@ func main() {
 				}
 			}(context, contexts)
 
-			if pluginName, ok := context[PluginName].(string); ok {
+			if pluginName, ok := context[consts.PluginName].(string); ok {
+
 				var result map[string]interface{}
+
+				var err1 *[]map[string]interface{}
+
 				switch pluginName {
 
-				case Discover:
-					result = snmp.Discover(context, &errors)
+				case consts.Discover:
+					result, err1 = snmp.Discover(context, &errors)
 
-				case Collect:
-					result = snmp.Collect(context, &errors)
+				case consts.Collect:
+					result, err1 = snmp.Collect(context, &errors)
 
 				default:
+
 					fmt.Println("Unsupported plugin type!")
 				}
 				if result != nil {
-					context["result"] = result
+
+					context[consts.Result] = result
 				}
 
-				jsonResult, err := json.Marshal(result)
-				if err != nil {
-					Logger.Error(fmt.Sprintf("Error marshaling collection result: %s", err.Error()))
+				if err1 != nil {
+
+					context[consts.Error] = "[]"
+
+					context[consts.Status] = "Failed"
+
+				} else {
+
+					context[consts.Error] = err1
+
+					context[consts.Status] = "Success"
 				}
+
+				jsonResult, err := json.Marshal(context)
+
+				if err != nil {
+
+					Logger.Error(fmt.Sprintf("Error marshaling collection result: %s", err.Error()))
+
+				}
+
 				DataLogger := utils.NewLogger("data", "BootstrapResult")
+
 				DataLogger.Info(string(jsonResult))
 			}
 		}(context)

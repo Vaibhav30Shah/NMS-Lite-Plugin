@@ -8,77 +8,65 @@ import (
 	"fmt"
 )
 
-/*
-	func Collect(context map[string]interface{}, errors *[]map[string]interface{}) {
-		Logger := utils.NewLogger("snmp", "Collect")
+func Collect(context map[string]interface{}, errors *[]map[string]interface{}) (map[string]interface{}, *[]map[string]interface{}) {
 
-		ip, port, community, timeOut, version := utils.ValidateContext(context)
-
-		client, err := snmpclient.Init(ip, community, uint16(port), version, int(timeOut))
-		if err != nil {
-			Logger.Error(fmt.Sprintf("Error initializing SNMP client: %s", err.Error()))
-			return
-		}
-		defer client.Close()
-
-		collectionResult, err := client.Walk(consts.TabularOids)
-		if err != nil {
-			Logger.Error(fmt.Sprintf("Error fetching tabular OIDs: %s", err.Error()))
-			return
-		}
-
-		var flattenedResult []map[string]interface{}
-
-		for oidName, oidResult := range collectionResult {
-			oidResultMap, ok := oidResult.(map[string]interface{})
-				if !ok {
-				Logger.Error(fmt.Sprintf("Error asserting type for OID %s", oidName))
-				continue
-			}
-
-			for interfaceIndex, interfaceData := range oidResultMap {
-				newData := make(map[string]interface{})
-				newData["interface.index"] = interfaceIndex
-				newData[oidName] = interfaceData
-				flattenedResult = append(flattenedResult, newData)
-			}
-		}
-
-		jsonResult, err := json.Marshal(flattenedResult)
-		if err != nil {
-			Logger.Error(fmt.Sprintf("Error marshaling collection result: %s", err.Error()))
-			return
-		}
-
-		fmt.Println("Result of collect successfully appended to result.json")
-		Logger2 := utils.NewLogger("snmp", "ResultData")
-		Logger2.Info(string(jsonResult))
-	}
-*/
-
-func Collect(context map[string]interface{}, errors *[]map[string]interface{}) map[string]interface{} {
 	Logger := utils.NewLogger("snmp", "Collect")
 
 	ip, port, community, timeOut, version := utils.ValidateContext(context)
 
 	client, err := snmpclient.Init(ip, community, uint16(port), version, int(timeOut))
+
 	if err != nil {
+
+		*errors = append(*errors, map[string]interface{}{
+
+			consts.ErrorName: "Error Initializing snmp client",
+
+			consts.ErrorMessage: err.Error(),
+		})
+
 		Logger.Error(fmt.Sprintf("Error initializing SNMP client: %s", err.Error()))
-		return nil
+
+		return nil, errors
 	}
+
 	defer client.Close()
 
 	collectionResult, err := client.Walk(consts.TabularOids)
+
 	if err != nil {
+
+		*errors = append(*errors, map[string]interface{}{
+
+			consts.ErrorName: "Error fetching tabular oids",
+
+			consts.ErrorMessage: err.Error(),
+		})
+
 		Logger.Error(fmt.Sprintf("Error fetching tabular OIDs: %s", err.Error()))
-		return nil
+
+		return nil, errors
 	}
 
-	result := make(map[string]interface{})
+	result := map[string]interface{}{
+		"interface": make([]map[string]interface{}, 0),
+	}
+
 	for oidName, oidResult := range collectionResult {
+
 		oidResultMap, ok := oidResult.(map[string]interface{})
+
 		if !ok {
+
+			*errors = append(*errors, map[string]interface{}{
+
+				consts.ErrorName: "Error asserting oid Type",
+
+				consts.ErrorMessage: err.Error(),
+			})
+
 			Logger.Error(fmt.Sprintf("Error asserting type for OID %s", oidName))
+
 			continue
 		}
 
@@ -86,12 +74,22 @@ func Collect(context map[string]interface{}, errors *[]map[string]interface{}) m
 	}
 
 	jsonResult, err := json.Marshal(result)
+
 	if err != nil {
+
+		*errors = append(*errors, map[string]interface{}{
+
+			consts.ErrorName: "Error marshaling result",
+
+			consts.ErrorMessage: err.Error(),
+		})
+
 		Logger.Error(fmt.Sprintf("Error marshaling collection result: %s", err.Error()))
 	}
 
 	Logger2 := utils.NewLogger("snmp", "ResultData")
+
 	Logger2.Info(string(jsonResult))
 
-	return result
+	return result, errors
 }
