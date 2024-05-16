@@ -1,7 +1,7 @@
 package snmpclient
 
 import (
-	"encoding/hex"
+	"NMS-Lite/utils"
 	"fmt"
 	g "github.com/gosnmp/gosnmp"
 	"strings"
@@ -80,110 +80,71 @@ func (c *SNMPClient) Get(oids []string) ([]g.SnmpPDU, error) {
 	return oid.Variables, nil
 }
 
-//	func (c *SNMPClient) Walk(oid string) ([]g.SnmpPDU, error) {
-//		var wg sync.WaitGroup
-//		results := make([]g.SnmpPDU, 0)
-//
-//		wg.Add(1)
-//		go func() {
-//			defer wg.Done()
-//			tempResults, err := c.GoSNMP.WalkAll(oid)
-//			if err != nil {
-//				return
-//			}
-//			results = append(results, tempResults...)
-//		}()
-//
-//		wg.Wait()
-//		return results, nil
-//	}
+func (c *SNMPClient) Walk(oidMap map[string]string) ([]interface{}, error) {
 
-func (c *SNMPClient) Walk(oidMap map[string]string) (map[string]interface{}, error) {
+	Logger := utils.NewLogger("snmp", "Collect")
 
-	//var wg sync.WaitGroup
+	interfacesDetails := make([]interface{}, 0)
 
-	filteredResult := make(map[string]interface{})
-
-	resultMap := make(map[string]interface{})
+	results := map[string]map[string]interface{}{}
 
 	for oidName, oid := range oidMap {
 
-		oidResult := make(map[string]interface{})
+		err := c.GoSNMP.BulkWalk(oid, func(dataUnit g.SnmpPDU) error {
 
-		err := c.GoSNMP.Walk(oid, func(pdu g.SnmpPDU) error {
-			switch pdu.Type {
-			case g.OctetString:
-				oidResult[pdu.Name] = string(pdu.Value.([]byte))
-			case g.Integer:
-				oidResult[pdu.Name] = g.ToBigInt(pdu.Value)
-			case g.TimeTicks:
-				oidResult[pdu.Name] = uint32(pdu.Value.(int64))
-			case g.Opaque:
-				oidResult[pdu.Name] = fmt.Sprintf("0x%X", pdu.Value.([]byte))
-			case g.Counter64:
-				oidResult[pdu.Name] = g.ToBigInt(pdu.Value)
-			case g.UnknownType:
-				oidResult[pdu.Name] = hex.Dump(pdu.Value.([]byte))
-			default:
-				oidResult[pdu.Name] = pdu.Value
+			tokens := strings.Split(dataUnit.Name, ".")
+
+			interfaceIndex := tokens[len(tokens)-1]
+
+			if _, ok := results[interfaceIndex]; !ok {
+
+				results[interfaceIndex] = make(map[string]interface{})
 			}
+
+			results[interfaceIndex][oidName] = resolveValue(dataUnit.Value, dataUnit.Type)
+
 			return nil
 		})
 
 		if err != nil {
-			// Handle error
+
+			Logger.Error(err.Error())
+
+			return nil, err
 		}
 
-		for key, value := range resultMap["result"].(map[string]interface{}) {
-			if strings.HasPrefix(key, "interface.admin.status") {
-				filteredResult[key] = value
-			}
-		}
-
-		resultMap[oidName] = oidResult
-
-		//wg.Add(1)
-		//
-		//results, _ := c.GoSNMP.BulkWalk(oid, 0, 10)
-		//
-		//go func(results []g.SnmpPDU, oidName string) {
-		//
-		//	defer wg.Done()
-		//
-		//	for _, result := range results {
-		//
-		//		switch result.Type {
-		//
-		//		case g.OctetString:
-		//			oidResult[result.Name] = string(result.Value.([]byte))
-		//
-		//		case g.Integer:
-		//			oidResult[result.Name] = g.ToBigInt(result.Value)
-		//
-		//		case g.TimeTicks:
-		//			oidResult[result.Name] = uint32(result.Value.(int64))
-		//
-		//		case g.Opaque:
-		//			oidResult[result.Name] = fmt.Sprintf("0x%X", result.Value.([]byte))
-		//
-		//		case g.Counter64:
-		//			oidResult[result.Name] = g.ToBigInt(result.Value)
-		//
-		//		case g.UnknownType:
-		//			oidResult[result.Name] = hex.Dump(result.Value.([]byte))
-		//
-		//		default:
-		//			oidResult[result.Name] = result.Value
-		//		}
-		//	}
-		//
-		//	resultMap[oidName] = oidResult
-		//}(results, oidName)
 	}
 
-	//wg.Wait()
+	for _, interfaceData := range results {
 
-	fmt.Println(filteredResult)
+		interfacesDetails = append(interfacesDetails, interfaceData)
+	}
 
-	return filteredResult, nil
+	Logger.Debug(fmt.Sprintf("%v", interfacesDetails))
+
+	return interfacesDetails, nil
+}
+
+func resolveValue(value interface{}, dataType g.Asn1BER) interface{} {
+	switch dataType {
+
+	case g.OctetString:
+		return string(value.([]byte))
+
+	case g.Integer:
+		return g.ToBigInt(value)
+
+	case g.Counter32:
+		return value.(uint)
+
+	case g.Gauge32:
+		return value.(uint)
+
+	case g.TimeTicks:
+		return value.(uint)
+
+	default:
+		return value
+
+	}
 }

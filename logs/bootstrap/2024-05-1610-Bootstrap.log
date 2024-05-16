@@ -1,0 +1,30 @@
+2024-05-16 10:14:03.372369552 Info Starting Plugin Engine
+2024-05-16 10:16:13.995694982 Info Starting Plugin Engine
+2024-05-16 10:17:42.669200456 Info Starting Plugin Engine
+2024-05-16 10:26:59.470015112 Info Starting Plugin Engine
+2024-05-16 10:26:59.485195246 Error Panic occurred: runtime error: index out of range [0] with length 0
+goroutine 20 [running]:
+runtime/debug.Stack()
+	/home/vaibhav/sdk/go1.21.9/src/runtime/debug/stack.go:24 +0x5e
+main.main.func1.1(0xf?, {0xc0000bf750?, 0x54b645?, 0x5555?})
+	/home/vaibhav/GolandProjects/NMS-Lite/main/bootstrap.go:60 +0x45
+panic({0x57d460?, 0xc0000d2090?})
+	/home/vaibhav/sdk/go1.21.9/src/runtime/panic.go:914 +0x21f
+NMS-Lite/snmpclient.(*SNMPClient).Walk.func1({{0x55b940, 0xc0000a6378}, {0xc0000c61e0, 0x19}, 0x4})
+	/home/vaibhav/GolandProjects/NMS-Lite/snmpclient/snmpclient.go:106 +0x18f
+github.com/gosnmp/gosnmp.(*GoSNMP).walk(0xc0000d8160, 0xa5, {0x58edd5?, 0x1?}, 0xc0000bfac0)
+	/home/vaibhav/go/pkg/mod/github.com/gosnmp/gosnmp@v1.37.0/walk.go:152 +0xcda
+github.com/gosnmp/gosnmp.(*GoSNMP).BulkWalk(...)
+	/home/vaibhav/go/pkg/mod/github.com/gosnmp/gosnmp@v1.37.0/gosnmp.go:590
+NMS-Lite/snmpclient.(*SNMPClient).Walk(0xc0000a00c0, 0xc?)
+	/home/vaibhav/GolandProjects/NMS-Lite/snmpclient/snmpclient.go:95 +0x1ed
+NMS-Lite/snmp.Collect(0x565340?, 0xc0000a6318)
+	/home/vaibhav/GolandProjects/NMS-Lite/snmp/collect.go:36 +0x365
+main.main.func1(0xc000098450)
+	/home/vaibhav/GolandProjects/NMS-Lite/main/bootstrap.go:78 +0x1d7
+created by main.main in goroutine 1
+	/home/vaibhav/GolandProjects/NMS-Lite/main/bootstrap.go:50 +0x2e5
+
+2024-05-16 10:30:13.492783543 Info Starting Plugin Engine
+2024-05-16 10:32:34.136758656 Info Starting Plugin Engine
+2024-05-16 10:59:47.201604899 Info Starting Plugin Engine

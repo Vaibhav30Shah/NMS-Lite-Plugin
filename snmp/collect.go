@@ -6,6 +6,7 @@ import (
 	"NMS-Lite/utils"
 	"encoding/json"
 	"fmt"
+	"strconv"
 )
 
 func Collect(context map[string]interface{}, errors *[]map[string]interface{}) (map[string]interface{}, *[]map[string]interface{}) {
@@ -48,9 +49,7 @@ func Collect(context map[string]interface{}, errors *[]map[string]interface{}) (
 		return nil, errors
 	}
 
-	result := map[string]interface{}{
-		"interface": make([]map[string]interface{}, 0),
-	}
+	result := map[string]interface{}{}
 
 	for oidName, oidResult := range collectionResult {
 
@@ -70,7 +69,7 @@ func Collect(context map[string]interface{}, errors *[]map[string]interface{}) (
 			continue
 		}
 
-		result[oidName] = oidResultMap
+		result[strconv.Itoa(oidName)] = oidResultMap
 	}
 
 	jsonResult, err := json.Marshal(result)

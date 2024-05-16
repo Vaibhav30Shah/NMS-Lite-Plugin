@@ -1,9 +1,13 @@
 package utils
 
-import "NMS-Lite/consts"
+import (
+	"NMS-Lite/consts"
+)
 
 func ValidateContext(context map[string]interface{}) (string, float64, string, float64, string) {
 	Logger := NewLogger("snmp", context[consts.PluginName].(string))
+
+	var version, community string
 
 	ip, ok := context[consts.ObjectIp].(string)
 
@@ -21,32 +25,58 @@ func ValidateContext(context map[string]interface{}) (string, float64, string, f
 		return "", 0, "", 0, ""
 	}
 
-	credentialProfile, ok := context[consts.SnmpCredential].(map[string]interface{})
-	if !ok {
-		Logger.Error("Credential profile not provided in context")
+	if credentials, ok := context[consts.SnmpCredential].([]interface{}); ok {
 
-		return "", 0, "", 0, ""
-	}
+		//checking for multiple credential profile
+		for _, credential := range credentials {
 
-	community, ok := credentialProfile[consts.SnmpCommunity].(string)
+			credMap, ok := credential.(map[string]interface{})
 
-	if !ok {
-		Logger.Error("Community string not provided in credential profile")
+			if !ok {
 
-		return "", 0, "", 0, ""
-	}
+				Logger.Error("Invalid credential profile format")
 
-	version, ok := credentialProfile[consts.SnmpVersion].(string)
+				continue
+			}
 
-	if !ok {
-		Logger.Error("Version not provided in credential profile")
+			tempVersion, ok := credMap["version"].(string)
 
-		return "", 0, "", 0, ""
+			if !ok {
+
+				Logger.Error("Version not provided in credential profile")
+
+				continue
+			}
+
+			tempCommunity, ok := credMap["community"].(string)
+
+			if !ok {
+
+				Logger.Error("Community string not provided in credential profile")
+
+				continue
+			}
+
+			// If both version and community are valid, use them
+			version = tempVersion
+
+			community = tempCommunity
+
+			break
+		}
+
+		if version == "" || community == "" {
+
+			Logger.Error("Version or community string not found in credential profile")
+
+			return "", 0, "", 0, ""
+		}
 	}
 
 	timeOut, ok := context[consts.SnmpRetries].(float64)
 
 	if !ok {
+
 		Logger.Error("Time out not provided in credential profile")
 
 		return "", 0, "", 0, ""

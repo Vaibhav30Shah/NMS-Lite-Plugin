@@ -88,13 +88,14 @@ func main() {
 
 				if err1 != nil {
 
-					context[consts.Error] = "[]"
+					context[consts.Error] = err1
 
 					context[consts.Status] = "Failed"
 
-				} else {
+				}
+				if err1 == nil {
 
-					context[consts.Error] = err1
+					context[consts.Error] = "[]"
 
 					context[consts.Status] = "Success"
 				}
