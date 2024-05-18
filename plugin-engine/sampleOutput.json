@@ -1,0 +1,59 @@
+{
+  "errors":[
+
+  ],
+  "object.ip":"172.16.10.1",
+  "objects":[
+    {
+      "interface":10,
+      "interface.bit.type":1
+    }
+  ],
+  "port":161,
+  "result":{
+    "interface":[
+      {
+        "interface":"10",
+        "interface.admin.status":"up",
+        "interface.bit.type":"1",
+        "interface.discard.packets":0,
+        "interface.error.packets":0,
+        "interface.in.packets":0,
+        "interface.last.change":" 0 day 0 hour 0 minute 0 second",
+        "interface.operational.status":"down",
+        "interface.out.packets":0,
+        "interface.packets":0,
+        "interface.received.discard.packets":0,
+        "interface.received.error.packets":0,
+        "interface.received.octets":0,
+        "interface.sent.discard.packets":0,
+        "interface.sent.error.packets":0,
+        "interface.sent.octets":0,
+        "status":"Down"
+      },
+      {
+        "interface":"112",
+        "interface.admin.status":"up",
+        "interface.bit.type":"1",
+        "interface.discard.packets":0,
+        "interface.error.packets":0,
+        "interface.in.packets":0,
+        "interface.last.change":" 0 day 0 hour 0 minute 0 second",
+        "interface.operational.status":"down",
+        "interface.out.packets":0,
+        "interface.packets":0,
+        "interface.received.discard.packets":0,
+        "interface.received.error.packets":0,
+        "interface.received.octets":0,
+        "interface.sent.discard.packets":0,
+        "interface.sent.error.packets":0,
+        "interface.sent.octets":0,
+        "status":"Down"
+      }
+    ],
+    "started.time":" 31 days 21 hours 38 minutes 1 seconds",
+    "started.time.seconds":2756281
+  },
+  "snmp.community":"public",
+  "snmp.version":"v2c"
+}

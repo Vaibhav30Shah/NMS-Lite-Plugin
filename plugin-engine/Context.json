@@ -1,0 +1,41 @@
+[
+  {
+    "discovery.name": "Switch s1",
+    "ip": "172.16.8.2",
+    "port": 161,
+    "credential.profile": [
+      {
+        "credential.name": "Switch s1",
+        "credential.profile.id": 1,
+        "protocol": "snmp",
+        "version": "2c",
+        "community": "public"
+      },
+      {
+        "credential.name": "Switch s3",
+        "credential.profile.id": 1,
+        "protocol": "snmp",
+        "version": "2c",
+        "community": "public"
+      }
+    ],
+    "retry.count": 5,
+    "plugin.type": "Discover"
+  },
+  {
+    "discovery.name": "Switch s2",
+    "ip": "172.16.10.43",
+    "port": 161,
+    "credential.profile": [
+      {
+        "credential.name": "Switch s2",
+        "credential.profile.id": 2,
+        "protocol": "snmp",
+        "version": "2c",
+        "community": "public"
+      }
+    ],
+    "retry.count": 5,
+    "plugin.type": "Collect"
+  }
+]
