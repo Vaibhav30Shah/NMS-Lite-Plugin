@@ -10,7 +10,6 @@ const (
 	SnmpPort       = "port"
 	SnmpCredential = "credential.profile"
 	SnmpVersion    = "version"
-	SnmpRetries    = "retry.count"
 	Error          = "error"
 	ErrorName      = "error.name"
 	ErrorMessage   = "error.message"

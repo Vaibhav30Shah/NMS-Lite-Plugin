@@ -14,15 +14,16 @@ type SNMPClient struct {
 }
 
 func Init(context map[string]interface{}) (*SNMPClient, error) {
+
 	client := &SNMPClient{
 
 		GoSNMP: &g.GoSNMP{
 
-			Target: context["ip"].(string),
+			Target: context[consts.ObjectIp].(string),
 
-			Community: context["community"].(string),
+			Community: context[consts.SnmpCommunity].(string),
 
-			Port: context["port"].(uint16),
+			Port: context[consts.SnmpPort].(uint16),
 
 			Retries: consts.Retries,
 
@@ -30,19 +31,16 @@ func Init(context map[string]interface{}) (*SNMPClient, error) {
 		},
 	}
 
-	switch context["version"] {
+	switch context[consts.SnmpVersion] {
 
 	case "1":
 		client.GoSNMP.Version = g.Version1
-
-	case "2c":
-		client.GoSNMP.Version = g.Version2c
 
 	case "3":
 		client.GoSNMP.Version = g.Version3
 
 	default:
-		return nil, fmt.Errorf("unsupported SNMP version: %v", context["version"]) //default:-v2c
+		client.GoSNMP.Version = g.Version2c
 	}
 
 	err := client.GoSNMP.Connect()
@@ -58,8 +56,10 @@ func Init(context map[string]interface{}) (*SNMPClient, error) {
 func (c *SNMPClient) Close() error {
 
 	if c.GoSNMP.Conn != nil {
+
 		return c.GoSNMP.Conn.Close()
 	}
+
 	return nil
 }
 
@@ -67,9 +67,9 @@ func (c *SNMPClient) Get(oids []string) ([]g.SnmpPDU, error) {
 
 	oid, err := c.GoSNMP.Get(oids)
 
-	if err != nil && oid.Variables != nil {
+	if err != nil || oid.Variables == nil {
 
-		return oid.Variables, err
+		return nil, err
 	}
 
 	return oid.Variables, nil
@@ -140,6 +140,5 @@ func resolveDataType(value interface{}, dataType g.Asn1BER) interface{} {
 
 	default:
 		return value
-
 	}
 }

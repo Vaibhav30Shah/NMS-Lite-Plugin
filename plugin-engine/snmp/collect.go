@@ -17,7 +17,24 @@ func Collect(context map[string]interface{}) map[string]interface{} {
 
 	result := map[string]interface{}{}
 
-	client, err := snmpclient.Init(context)
+	var newContext = make(map[string]interface{})
+
+	credentialsArray := context[consts.SnmpCredential].([]interface{})
+
+	for _, credentials := range credentialsArray {
+
+		credentialMap := credentials.(map[string]interface{})
+
+		newContext[consts.SnmpCommunity] = credentialMap[consts.SnmpCommunity].(string)
+
+		newContext[consts.SnmpVersion] = credentialMap[consts.SnmpVersion].(string)
+
+		newContext[consts.SnmpPort] = uint16(context[consts.SnmpPort].(float64))
+
+		newContext[consts.ObjectIp] = context[consts.ObjectIp]
+	}
+
+	client, err := snmpclient.Init(newContext)
 
 	defer client.Close()
 
@@ -32,9 +49,9 @@ func Collect(context map[string]interface{}) map[string]interface{} {
 
 		logger.Error(fmt.Sprintf("Error initializing SNMP client: %s", err.Error()))
 
-		result[consts.Error] = errors
+		context[consts.Error] = errors
 
-		result[consts.Status] = consts.FailedStatus
+		context[consts.Status] = consts.FailedStatus
 
 		return result
 	}
@@ -52,9 +69,9 @@ func Collect(context map[string]interface{}) map[string]interface{} {
 
 		logger.Error(fmt.Sprintf("Error fetching tabular OIDs: %s", err.Error()))
 
-		result[consts.Error] = errors
+		context[consts.Error] = errors
 
-		result[consts.Status] = consts.FailedStatus
+		context[consts.Status] = consts.FailedStatus
 
 		return result
 	}
@@ -74,9 +91,9 @@ func Collect(context map[string]interface{}) map[string]interface{} {
 
 			logger.Error(fmt.Sprintf("Error asserting type for OID %v", oidName))
 
-			result[consts.Error] = errors
+			context[consts.Error] = errors
 
-			result[consts.Status] = consts.FailedStatus
+			context[consts.Status] = consts.FailedStatus
 
 			continue
 		}
@@ -97,9 +114,9 @@ func Collect(context map[string]interface{}) map[string]interface{} {
 
 		logger.Error(fmt.Sprintf("Error marshaling collection result: %s", err.Error()))
 
-		result[consts.Error] = errors
+		context[consts.Error] = errors
 
-		result[consts.Status] = consts.FailedStatus
+		context[consts.Status] = consts.FailedStatus
 
 		return result
 	}
@@ -108,9 +125,9 @@ func Collect(context map[string]interface{}) map[string]interface{} {
 
 	resultLogger.Info(string(jsonResult))
 
-	result[consts.Error] = "[]"
+	context[consts.Error] = "[]"
 
-	result[consts.Status] = consts.SuccessStatus
+	context[consts.Status] = consts.SuccessStatus
 
 	return result
 }

@@ -7,7 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"os"
+	"github.com/pebbe/zmq4"
 	"runtime/debug"
 	"sync"
 )
@@ -16,87 +16,143 @@ func main() {
 
 	wg := new(sync.WaitGroup)
 
-	Logger := utils.NewLogger("bootstrap", "Bootstrap")
+	logger := utils.NewLogger("bootstrap", "Bootstrap")
 
-	Logger.Info("Starting Plugin Engine")
+	logger.Info("Starting Plugin Engine")
 
-	decodedContext, err := base64.StdEncoding.DecodeString(os.Args[1]) //getting the encoded json object
+	context, err := zmq4.NewContext()
 
 	if err != nil {
 
-		Logger.Error(fmt.Sprintf("Error in decoding context %s", err.Error()))
+		logger.Error(fmt.Sprintf("Error creating ZMQ context: %v", err.Error()))
 
 		return
 	}
 
-	contexts := make([]map[string]interface{}, 0)
+	defer context.Term()
 
-	if err = json.Unmarshal(decodedContext, &contexts); err != nil {
+	recvSocket, err := context.NewSocket(zmq4.PULL)
 
-		Logger.Error(fmt.Sprintf("Conversion of json to map failed: %s", err.Error()))
+	sendSocket, err := context.NewSocket(zmq4.PUSH)
+
+	if err != nil {
+
+		logger.Error(fmt.Sprintf("Error creating ZMQ recvSocket: %v", err.Error()))
 
 		return
 	}
 
-	// Create a slice to store results
-	results := make([]map[string]interface{}, 0)
+	defer recvSocket.Close()
 
-	for _, context := range contexts {
+	defer sendSocket.Close()
 
-		Logger.Debug(fmt.Sprintf("Context: %s\n", context))
+	err = recvSocket.Connect("tcp://*:5555")
 
-		wg.Add(1)
+	err = sendSocket.Connect("tcp://*:5556")
 
-		go func(context map[string]interface{}) {
+	if err != nil {
 
-			defer wg.Done()
+		logger.Error(fmt.Sprintf("Error binding ZMQ recvSocket: %v", err.Error()))
 
-			defer func() {
+		return
+	}
 
-				if r := recover(); r != nil {
+	for {
+		recdContext, err := recvSocket.Recv(0)
 
-					Logger.Error(fmt.Sprintf("Panic occurred: %v\n%s", r, debug.Stack()))
+		decodedContext, err := base64.StdEncoding.DecodeString(recdContext)
 
-					return
+		if err != nil {
+
+			logger.Error(fmt.Sprintf("Error receiving request: %v", err.Error()))
+
+			continue
+		}
+
+		if err != nil {
+
+			logger.Error(fmt.Sprintf("Error in decoding context %s", err.Error()))
+
+			return
+		}
+
+		contexts := make([]map[string]interface{}, 0)
+
+		logger.Info(fmt.Sprintf("Context: %v", decodedContext))
+
+		if err = json.Unmarshal([]byte(decodedContext), &contexts); err != nil {
+
+			logger.Error(fmt.Sprintf("Conversion of json to map failed: %s", err.Error()))
+
+			return
+		}
+
+		// Create a slice to store results
+		results := make([]map[string]interface{}, 0)
+
+		for _, context := range contexts {
+
+			logger.Debug(fmt.Sprintf("Context: %s\n", context))
+
+			wg.Add(1)
+
+			go func(context map[string]interface{}) {
+
+				defer wg.Done()
+
+				defer func() {
+
+					if r := recover(); r != nil {
+
+						logger.Error(fmt.Sprintf("Panic occurred: %v\n%s", r, debug.Stack()))
+
+						return
+					}
+				}()
+
+				if pluginName, ok := context[consts.PluginName].(string); ok {
+
+					var result map[string]interface{}
+
+					switch pluginName {
+
+					case consts.Discover:
+						result = snmp.Discover(context)
+
+					case consts.Collect:
+						result = snmp.Collect(context)
+
+					default:
+						fmt.Println("Unsupported plugin type!")
+					}
+
+					context[consts.Result] = result
+
+					results = append(results, context)
 				}
-			}()
-
-			if pluginName, ok := context[consts.PluginName].(string); ok {
-
-				var result map[string]interface{}
-
-				switch pluginName {
-
-				case consts.Discover:
-					result = snmp.Discover(context)
-
-				case consts.Collect:
-					result = snmp.Collect(context)
-
-				default:
-					fmt.Println("Unsupported plugin type!")
-				}
-
-				context[consts.Result] = result
-
-				results = append(results, context)
-			}
-		}(context)
+			}(context)
+		}
 
 		wg.Wait()
+
+		jsonResult, err := json.Marshal(results)
+
+		if err != nil {
+
+			logger.Error(fmt.Sprintf("Error marshaling collection result: %s", err.Error()))
+
+		}
+
+		encodedResult := base64.StdEncoding.EncodeToString(jsonResult)
+
+		sendSocket.Send(encodedResult, zmq4.DONTWAIT)
+
+		logger.Info("Result sent Via ZMQ.")
+
+		//fmt.Println(base64.StdEncoding.EncodeToString(jsonResult))
+
+		dataLogger := utils.NewLogger("data", "BootstrapResult")
+
+		dataLogger.Info(string(jsonResult))
 	}
-
-	jsonResult, err := json.Marshal(results)
-
-	if err != nil {
-
-		Logger.Error(fmt.Sprintf("Error marshaling collection result: %s", err.Error()))
-
-	}
-
-	fmt.Println(base64.StdEncoding.EncodeToString(jsonResult))
-
-	DataLogger := utils.NewLogger("data", "BootstrapResult")
-
-	DataLogger.Info(string(jsonResult))
 }

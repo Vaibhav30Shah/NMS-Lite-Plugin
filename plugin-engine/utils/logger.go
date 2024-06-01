@@ -87,9 +87,3 @@ func (l *Logger) Warn(message string) {
 	write("Warn", message, l.directory, l.component)
 
 }
-
-//
-//func SetLogLevel(level int) {
-//
-//	logLevel = level
-//}
