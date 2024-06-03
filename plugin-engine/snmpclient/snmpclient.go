@@ -43,9 +43,7 @@ func Init(context map[string]interface{}) (*SNMPClient, error) {
 		client.GoSNMP.Version = g.Version2c
 	}
 
-	err := client.GoSNMP.Connect()
-
-	if err != nil {
+	if err := client.GoSNMP.Connect(); err != nil {
 
 		return nil, fmt.Errorf("failed to connect to %v: %v", context["ip"], err)
 	}
@@ -121,6 +119,7 @@ func (c *SNMPClient) Walk(oidMap map[string]string) ([]interface{}, error) {
 }
 
 func resolveDataType(value interface{}, dataType g.Asn1BER) interface{} {
+
 	switch dataType {
 
 	case g.OctetString:
