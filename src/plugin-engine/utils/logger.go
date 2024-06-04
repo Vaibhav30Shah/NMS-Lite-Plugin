@@ -3,7 +3,6 @@ package utils
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 )
 
@@ -27,7 +26,8 @@ func write(level, message, directory, component string) {
 	// Create the log file name
 	fileName := fmt.Sprintf("%s/%s%d-%s.log", directory, currentTime.Format("2006-01-02"), currentTime.Hour(), component)
 
-	err := os.MkdirAll(filepath.Dir(fileName), 0755)
+	err := os.MkdirAll(directory, 0755)
+
 	if err != nil {
 		fmt.Println("Error creating directories:", err)
 		return
@@ -46,6 +46,7 @@ func write(level, message, directory, component string) {
 }
 
 func NewLogger(directory, component string) Logger {
+
 	return Logger{
 		directory: fmt.Sprintf("logs/%s", directory),
 		component: component,
