@@ -83,6 +83,6 @@ func main() {
 
 		wg.Wait()
 
-		logger.Info(fmt.Sprintf("Results: %v", results))
+		logger.Trace(fmt.Sprintf("Results: %v", results))
 	}
 }

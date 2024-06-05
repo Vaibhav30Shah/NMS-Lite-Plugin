@@ -75,7 +75,7 @@ func (c *SNMPClient) Get(oids []string) ([]g.SnmpPDU, error) {
 
 func (c *SNMPClient) Walk(oidMap map[string]string) ([]interface{}, error) {
 
-	Logger := utils.NewLogger("snmp", "Collect")
+	logger := utils.NewLogger("snmp", "Collect")
 
 	interfacesDetails := make([]interface{}, 0)
 
@@ -101,7 +101,7 @@ func (c *SNMPClient) Walk(oidMap map[string]string) ([]interface{}, error) {
 
 		if err != nil {
 
-			Logger.Error(err.Error())
+			logger.Error(err.Error())
 
 			return nil, err
 		}
@@ -113,7 +113,7 @@ func (c *SNMPClient) Walk(oidMap map[string]string) ([]interface{}, error) {
 		interfacesDetails = append(interfacesDetails, interfaceData)
 	}
 
-	Logger.Debug(fmt.Sprintf("%v", interfacesDetails))
+	logger.Debug(fmt.Sprintf("%v", interfacesDetails))
 
 	return interfacesDetails, nil
 }

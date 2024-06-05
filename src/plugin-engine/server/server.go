@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pebbe/zmq4"
+	"runtime/debug"
 )
 
 var logger = utils.NewLogger("bootstrap", "Bootstrap")
@@ -19,6 +20,14 @@ var recvSocket *zmq4.Socket
 var sendSocket *zmq4.Socket
 
 func Init() error {
+
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			logger.Error(fmt.Sprintf("Panic occurred: %v\n%s", r, debug.Stack()))
+		}
+	}()
 
 	if context, err = zmq4.NewContext(); err != nil {
 
@@ -60,6 +69,14 @@ func Init() error {
 
 func ReceiveRequests(result chan<- []map[string]interface{}) {
 
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			logger.Error(fmt.Sprintf("Panic occurred: %v\n%s", r, debug.Stack()))
+		}
+	}()
+
 	for {
 		recdContext, err := recvSocket.Recv(0)
 
@@ -97,6 +114,14 @@ func SendResults(result <-chan []map[string]interface{}) {
 
 	logger := utils.NewLogger("server", "SendResults")
 
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			logger.Error(fmt.Sprintf("Panic occurred: %v\n%s", r, debug.Stack()))
+		}
+	}()
+
 	for {
 		fmt.Sprintf("%v", result)
 
@@ -129,6 +154,14 @@ func SendResults(result <-chan []map[string]interface{}) {
 }
 
 func Close() {
+
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			logger.Error(fmt.Sprintf("Panic occurred: %v\n%s", r, debug.Stack()))
+		}
+	}()
 
 	if err := context.Term(); err != nil {
 
