@@ -21,14 +21,6 @@ var sendSocket *zmq4.Socket
 
 func Init() error {
 
-	defer func() {
-
-		if r := recover(); r != nil {
-
-			logger.Error(fmt.Sprintf("Panic occurred: %v\n%s", r, debug.Stack()))
-		}
-	}()
-
 	if context, err = zmq4.NewContext(); err != nil {
 
 		logger.Error(fmt.Sprintf("Error creating ZMQ context: %v", err.Error()))
@@ -74,6 +66,8 @@ func ReceiveRequests(result chan<- []map[string]interface{}) {
 		if r := recover(); r != nil {
 
 			logger.Error(fmt.Sprintf("Panic occurred: %v\n%s", r, debug.Stack()))
+
+			go ReceiveRequests(result)
 		}
 	}()
 
@@ -82,9 +76,9 @@ func ReceiveRequests(result chan<- []map[string]interface{}) {
 
 		logger.Trace(recdContext)
 
-		//decodedContext, err := base64.StdEncoding.DecodeString(os.Args[1])
-
 		decodedContext, err := base64.StdEncoding.DecodeString(recdContext)
+
+		//decodedContext, err := base64.StdEncoding.DecodeString(os.Args[1])
 
 		logger.Trace("received context:=" + string(decodedContext))
 
@@ -119,6 +113,8 @@ func SendResults(result <-chan []map[string]interface{}) {
 		if r := recover(); r != nil {
 
 			logger.Error(fmt.Sprintf("Panic occurred: %v\n%s", r, debug.Stack()))
+
+			go SendResults(result)
 		}
 	}()
 

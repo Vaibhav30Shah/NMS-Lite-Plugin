@@ -10,79 +10,115 @@ import (
 	"sync"
 )
 
+var logger = utils.NewLogger("bootstrap", "Bootstrap")
+
 func main() {
-	logger := utils.NewLogger("bootstrap", "Bootstrap")
 
 	logger.Info("Starting Plugin Engine")
 
-	err := server.Init()
-
-	defer server.Close()
-
-	if err != nil {
+	if err := server.Init(); err != nil {
 
 		logger.Error(fmt.Sprintf("Error initializing the ZMQ sockets: %v", err.Error()))
 	}
+
+	defer server.Close()
 
 	channel := make(chan []map[string]interface{})
 
 	go server.ReceiveRequests(channel)
 
-	results := make([]map[string]interface{}, 0)
-
 	go server.SendResults(channel)
 
-	for {
+	executeTasks(channel)
 
+	select {}
+}
+
+func executeTasks(channel chan []map[string]interface{}) {
+
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			logger.Error(fmt.Sprintf("Panic occurred: %v\n%s", r, debug.Stack()))
+
+			executeTasks(channel)
+		}
+	}()
+
+	for {
 		contexts := <-channel
 
-		wg := sync.WaitGroup{}
+		var wg sync.WaitGroup
+
+		results := make([]map[string]interface{}, 0, len(contexts))
 
 		for _, context := range contexts {
 
 			wg.Add(1)
 
-			go func(context map[string]interface{}) {
+			if pluginName, ok := context[consts.PluginName]; ok {
 
-				defer wg.Done()
+				switch pluginName {
 
-				defer func() {
+				case consts.Discover:
 
-					if r := recover(); r != nil {
+					go func(context map[string]interface{}) {
 
-						logger.Error(fmt.Sprintf("Panic occurred: %v\n%s", r, debug.Stack()))
-					}
-				}()
+						defer wg.Done()
 
-				if pluginName, ok := context[consts.PluginName].(string); ok {
+						defer func() {
 
-					var result map[string]interface{}
+							if r := recover(); r != nil {
 
-					switch pluginName {
+								logger.Error(fmt.Sprintf("Panic occurred: %v\n%s", r, debug.Stack()))
+							}
+						}()
 
-					case consts.Discover:
-						result = snmp.Discover(context)
+						result := snmp.Discover(context)
 
-					case consts.Collect:
-						result = snmp.Collect(context)
+						context[consts.Result] = result
 
-					default:
-						logger.Error("Unsupported plugin type!")
-					}
+						results = append(results, context)
 
-					context[consts.Result] = result
+						return
 
-					results = append(results, context)
+					}(context)
+
+				case consts.Collect:
+
+					go func(context map[string]interface{}) {
+
+						defer wg.Done()
+
+						defer func() {
+
+							if r := recover(); r != nil {
+
+								logger.Error(fmt.Sprintf("Panic occurred: %v\n%s", r, debug.Stack()))
+							}
+						}()
+
+						result := snmp.Collect(context)
+
+						context[consts.Result] = result
+
+						results = append(results, context)
+
+						return
+
+					}(context)
+
+				default:
+					logger.Error("Unsupported plugin type!")
 				}
-
-				channel <- contexts
-
-				return
-			}(context)
+			}
 		}
 
 		wg.Wait()
 
 		logger.Trace(fmt.Sprintf("Results: %v", results))
+
+		channel <- contexts
 	}
 }

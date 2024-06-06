@@ -19,4 +19,5 @@ const (
 	FailedStatus   = "failed"
 	Timeout        = 3
 	Retries        = 3
+	IsDiscovered   = "is.discovered"
 )

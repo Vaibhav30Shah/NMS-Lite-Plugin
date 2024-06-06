@@ -6,22 +6,13 @@ import (
 	"NMS-Lite/utils"
 	"encoding/json"
 	"fmt"
-	"runtime/debug"
 	"strconv"
 	"strings"
 )
 
 func Discover(context map[string]interface{}) map[string]interface{} {
 
-	logger := utils.NewLogger("snmp", "Discover") //logger
-
-	defer func() {
-
-		if r := recover(); r != nil {
-
-			logger.Error(fmt.Sprintf("Panic occurred: %v\n%s", r, debug.Stack()))
-		}
-	}()
+	logger := utils.NewLogger("snmp", "Discover")
 
 	var errors []map[string]interface{}
 
@@ -128,9 +119,15 @@ func Discover(context map[string]interface{}) map[string]interface{} {
 
 	resultLogger.Info(string(jsonResult))
 
+	if err != nil {
+		resultLogger.Error(fmt.Sprintf("Error marshaling snmp result: %s", err.Error()))
+	}
+
 	context[consts.Error] = "[]"
 
 	context[consts.Status] = consts.SuccessStatus
+
+	context[consts.IsDiscovered] = true
 
 	return result
 }
@@ -138,14 +135,6 @@ func Discover(context map[string]interface{}) map[string]interface{} {
 func Collect(context map[string]interface{}) map[string]interface{} {
 
 	logger := utils.NewLogger("snmp", "Collect")
-
-	defer func() {
-
-		if r := recover(); r != nil {
-
-			logger.Error(fmt.Sprintf("Panic occurred: %v\n%s", r, debug.Stack()))
-		}
-	}()
 
 	var errors []map[string]interface{}
 
